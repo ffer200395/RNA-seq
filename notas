@@ -1,0 +1,15 @@
+#------->Normalización ( which is necessary to make accurate comparisons of gene expression between samples.)
+-Método:DESeq2’s median of ratios [1]
+-Descripción:counts divided by sample-specific size factors determined by median ratio of gene counts relative to geometric mean per gene
+-Factores a tener en cuenta:sequencing depth and RNA composition
+-Uso recomendado:gene count comparisons between samples and for DE analysis; NOT for within sample comparisons
+-Detalles:https://hbctraining.github.io/DGE_workshop/lessons/02_DGE_count_normalization.html
+
+#While normalization is essential for differential expression analyses, it is also necessary for exploratory data analysis, 
+#visualization of data, and whenever you are exploring or comparing counts between or within samples.
+#Since tools for differential expression analysis are comparing the counts between sample groups for the same gene, 
+#gene length does not need to be accounted for by the tool. However, sequencing depth and RNA composition do need to be taken into account.
+# normalized=True divide cada columna por su size factor (seq depth)
+#For the log2 approach, we need to first estimate size factors to account for sequencing depth, and then specify normalized=TRUE
+
+
