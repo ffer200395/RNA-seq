@@ -45,12 +45,19 @@ sort(colSums(my.counts))/1e6
 my.counts.norm <- log2(counts(dds, normalized=TRUE)+1)
 
 # Mostramos los datos normalizados versus sin normalizar
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
 plot(my.counts[,1:2], main='Muestra 1 vs muestra 2 sin normalizar')
 plot(my.counts.norm[,1:2],  main='Muestra 1 vs muestra 2 tras normalizar')
-par(mfrow=c(1,2))
 boxplot(log2(counts(dds)+1), main='Muestras sin normalizar', names=my.targets$SRA_Sample, las=2)
 boxplot(my.counts.norm, main='Muestras normalizadas', names=my.targets$SRA_Sample, las=2)
+
+# Estabilizar la varianza con rlog
+library(DESeq2)
+rld <- rlog(dds)
+
+
+# --- Identificación de genes diferencialmente expresados
+
 
 
 
