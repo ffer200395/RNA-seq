@@ -55,26 +55,6 @@ se <- summarizeOverlaps(exons.by.gene, bam.list,
 colData(se) <- DataFrame(sample.table)
 ```
 
-A similar function in the *Rsubread* library can be used to construct a count matrix:
-
-```{r cache=TRUE}
-# not available for Windows - use above method instead
-library(Rsubread)
-fc <- featureCounts(bam.files, annot.ext=gtf.file,
-                    isGTFAnnotationFile=TRUE, 
-                    isPaired=TRUE)
-names(fc)
-unname(fc$counts) # hide the colnames
-```
-
-Plot the first column from each function against each other (after matching the rows of the *featureCounts* matrix to the one returned by *summarizeOverlaps*.
-
-```{r}
-plot(assay(se)[,1], 
-     fc$counts[match(rownames(se),rownames(fc$counts)),1])
-abline(0,1)
-```
-
 ## Visualizing sample-sample distances
 
 We now load the full *SummarizedExperiment* object, counting reads over all the genes.

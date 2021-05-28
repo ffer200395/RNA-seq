@@ -10,7 +10,7 @@ targets <- read.csv('data/targets.csv', sep = ',', header = T)
 library(dplyr)
 set.seed(1234)
 # Filtramos para tener sólo datos RNA Seq (NGS) y elegimos 10 muestras de cada grupo
-my.targets <- targets %>% filter(molecular_data_type == 'RNA Seq (NGS)') %>% group_by(Group) %>% sample_n(8)
+my.targets <- targets %>% group_by(Group) %>% sample_n(10)
 
 # Modificamos los nombres de las muestras para que sea igual que las columnas de la tabla counts
 my.targets$Sample_Name <- gsub('-', '.', my.targets$Sample_Name)
@@ -26,12 +26,9 @@ sum(colnames(my.counts) == rownames(my.targets))
 my.targets$Group %>% as.factor() %>% relevel('NIT') -> my.targets$Group
 
 # Construimos el objeto DESeqDataSet a partir de Targets y Counts
-ddsMat <- DESeqDataSetFromMatrix(countData = my.counts, colData = my.targets, design = ~ Group)
+dds <- DESeqDataSetFromMatrix(countData = my.counts, colData = my.targets, design = ~ Group)
 
-# Ejecutamos el modelo DESeq2
-dds <- DESeq(ddsMat)
-
-# --- Preprocesado de los datos: filtraje y normalización
+# --- Preprocesado de los datos: filtraje, normalización y estabilización de la varianza
 
 # Nos quedamos con aquellos genes que tengan al menos 10 reads en total
 nrow(dds)
@@ -41,25 +38,42 @@ nrow(dds)
 # Número de reads por muestra expresado en millones
 sort(colSums(my.counts))/1e6
 
-# Normalizamos
-my.counts.norm <- log2(counts(dds, normalized=TRUE)+1)
+# log2 normalized counts 
+log.norm.counts <- log2(counts(estimateSizeFactors(dds), normalized=TRUE) + 1)
 
-# Mostramos los datos normalizados versus sin normalizar
-par(mfrow=c(2,2))
-plot(my.counts[,1:2], main='Muestra 1 vs muestra 2 sin normalizar')
-plot(my.counts.norm[,1:2],  main='Muestra 1 vs muestra 2 tras normalizar')
-boxplot(log2(counts(dds)+1), main='Muestras sin normalizar', names=my.targets$SRA_Sample, las=2)
-boxplot(my.counts.norm, main='Muestras normalizadas', names=my.targets$SRA_Sample, las=2)
-
-# Estabilizar la varianza con rlog
-library(DESeq2)
+# Regularized log transformation
 rld <- rlog(dds)
 
+# Variance stabilizing transformation
+vsd <- varianceStabilizingTransformation(dds)
+
+# Scatter plots
+par(mfrow=c(2,2))
+plot(log2(counts(dds)[,1:2] + 1), cex=.1)
+plot(log.norm.counts[,1:2], cex=.1)
+plot(assay(rld)[,1:2], cex=.1)
+plot(assay(vsd)[,1:2], cex=.1)
+
+# Boxplots
+par(mfrow=c(2,2))
+boxplot(log2(counts(dds) + 1), names=my.targets$SRA_Sample, las=2)
+boxplot(log.norm.counts, names=my.targets$SRA_Sample, las=2)
+boxplot(assay(rld), names=my.targets$SRA_Sample, las=2)
+boxplot(assay(vsd), names=my.targets$SRA_Sample, las=2)
+
+# PCA
+
+# Cluster
 
 # --- Identificación de genes diferencialmente expresados
 
+# Ejecutamos el modelo DESeq2
+dds <- DESeq(dds)
 
-
+# Hacemos los contrastes entre grupos
+res_sfi_nit <- results(dds, contrast=c("Group",'SFI','NIT'))
+res_eli_nit <- results(dds, contrast=c("Group",'ELI','NIT'))
+res_eli_sfi <- results(dds, contrast=c("Group",'ELI','SFI'))
 
 
 
