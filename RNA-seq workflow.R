@@ -77,6 +77,61 @@ res_sfi_nit <- results(dds, contrast=c("Group",'SFI','NIT'))
 res_eli_nit <- results(dds, contrast=c("Group",'ELI','NIT'))
 res_eli_sfi <- results(dds, contrast=c("Group",'ELI','SFI'))
 
+# Número de genes con p-val ajustado menor de 0.1
+table(res_sfi_nit$padj < 0.1)
+table(res_eli_nit$padj < 0.1)
+table(res_eli_sfi$padj < 0.1)
+
+# Criterio más estricto, incrementando el umbral de log2 fold change
+res_sfi_nit_LFC1 <- results(dds, contrast=c("Group",'SFI','NIT'), lfcThreshold=1)
+res_eli_nit_LFC1 <- results(dds, contrast=c("Group",'ELI','NIT'), lfcThreshold=1)
+res_eli_sfi_LFC1 <- results(dds, contrast=c("Group",'ELI','SFI'), lfcThreshold=1)
+table(res_sfi_nit_LFC1$padj < 0.1)
+table(res_eli_nit_LFC1$padj < 0.1)
+table(res_eli_sfi_LFC1$padj < 0.1)
+
+# If we consider a fraction of 10% false positives acceptable, we can consider all genes 
+# with an adjusted p value below 10% = 0.1 as significant. How many such genes are there?
+sum(res_sfi_nit$padj < 0.1, na.rm=TRUE)
+sum(res_eli_nit$padj < 0.1, na.rm=TRUE)
+sum(res_eli_sfi$padj < 0.1, na.rm=TRUE)
+
+# Genes más significativos
+res_sfi_nit_Sig <- subset(res_sfi_nit, padj < 0.1)
+res_eli_nit_Sig <- subset(res_eli_nit, padj < 0.1)
+res_eli_sfi_Sig <- subset(res_eli_sfi, padj < 0.1)
+
+# Genes up-regulated
+head(res_sfi_nit_Sig[ order(res_sfi_nit_Sig$log2FoldChange, decreasing = TRUE), ])
+
+# MA-plot
+
+# p-val hist
+
+# Plot of counts
+
+# Heatmap of top genes
+
+# Anotación
+library("AnnotationDbi")
+columns(org.Hs.eg.db)
+
+res_sfi_nit_Sig$symbol <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res_sfi_nit_Sig),
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+
+res_sfi_nit_Sig$entrez <- mapIds(org.Hs.eg.db,
+                    keys=row.names(res_sfi_nit_Sig),
+                    column="ENTREZID",
+                    keytype="ENSEMBL",
+                    multiVals="first")
+
+
+
+
+
 
 
 
