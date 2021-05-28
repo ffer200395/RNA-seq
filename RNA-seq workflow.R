@@ -65,6 +65,8 @@ boxplot(assay(vsd), names=my.targets$SRA_Sample, las=2)
 
 # Cluster
 
+# Heatmap
+
 # --- Identificación de genes diferencialmente expresados
 
 # Ejecutamos el modelo DESeq2
