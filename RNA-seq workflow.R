@@ -1,7 +1,6 @@
 ## --- Paquetes necesarios para el análisis
 if (!require(DESeq2))BiocManager::install("DESeq2")
 if(!(require(dplyr))) install.packages("dplyr")
-if(!(require(ggfortify))) install.packages("ggfortify")
 
 ## --- Cargamos los datos
 counts <- read.csv('data/counts.csv', sep = ';', header = T, row.names = 1)
@@ -49,7 +48,7 @@ rld <- rlog(dds)
 library(DESeq2)
 vsd <- vst(dds)
 
-# --- EDA: Scatter plots, boxplots, PCA, cluster, heatmaps
+# --- EDA: Scatter plots, boxplots, cluster y PCA
 
 # Scatter plots
 par(mfrow=c(2,2),mar=c(2,2,2,2))
@@ -66,15 +65,25 @@ boxplot(assay(rld), names=my.targets$SRA_Sample, las=2, main = 'Regularized Log'
 boxplot(assay(vsd), names=my.targets$SRA_Sample, las=2, main = 'VST')
 
 # PCA
-par(mfrow=c(1,2))
+my.pca <- function(datos, grupos){
+  pca_res <- prcomp(t(assay(datos)), scale = FALSE)
+  pca_df <- as.data.frame(pca_res$x)
+  pca_df$Group <- grupos
+  pcts <- round(pca_res$sdev^2/sum(pca_res$sdev^2)*100,1)
+  plot(x = pca_df$PC1, y = pca_df$PC2, col = pca_df$Group, xlab = paste0('PC1 ',pcts[1],'%'), ylab = paste0('PC2 ',pcts[2],'%'))
+  legend("bottomleft", legend = unique(pca_df$Group), col = unique(pca_df$Group), pch =19, horiz = T )
+}
+my.pca(rld, my.targets$Group)
 
-plotPCA(rld, intgroup="Group")
-DESeq2::plotPCA(vsd, intgroup="Group")
-test = prcomp(rld)
+
 
 # Cluster
+par(mfrow=c(3,1),mar=c(2,2,2,2))
+plot(hclust(dist(t(log.norm.counts))), labels=colData(dds)$Group, main = 'Log norm')
+plot(hclust(dist(t(assay(rld)))), labels=colData(rld)$Group, main = 'Regularized Log')
+plot(hclust(dist(t(assay(vsd)))), labels=colData(vsd)$Group, main = 'VST')
 
-# Heatmap
+
 
 # --- Identificación de genes diferencialmente expresados
 
