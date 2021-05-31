@@ -64,6 +64,12 @@ boxplot(log.norm.counts, names=my.targets$SRA_Sample, las=2, main = 'Log norm')
 boxplot(assay(rld), names=my.targets$SRA_Sample, las=2, main = 'Regularized Log')
 boxplot(assay(vsd), names=my.targets$SRA_Sample, las=2, main = 'VST')
 
+# Cluster
+par(mfrow=c(3,1),mar=c(2,2,2,2))
+plot(hclust(dist(t(log.norm.counts))), labels=colData(dds)$Group, main = 'Log norm')
+plot(hclust(dist(t(assay(rld)))), labels=colData(rld)$Group, main = 'Regularized Log')
+plot(hclust(dist(t(assay(vsd)))), labels=colData(vsd)$Group, main = 'VST')
+
 # PCA
 my.pca <- function(datos, grupos){
   pca_res <- prcomp(t(assay(datos)), scale = FALSE)
@@ -71,19 +77,10 @@ my.pca <- function(datos, grupos){
   pca_df$Group <- grupos
   pcts <- round(pca_res$sdev^2/sum(pca_res$sdev^2)*100,1)
   plot(x = pca_df$PC1, y = pca_df$PC2, col = pca_df$Group, xlab = paste0('PC1 ',pcts[1],'%'), ylab = paste0('PC2 ',pcts[2],'%'))
-  legend("bottomleft", legend = unique(pca_df$Group), col = unique(pca_df$Group), pch =19, horiz = T )
+  legend("bottomleft", legend = unique(pca_df$Group), col = unique(pca_df$Group), pch =19, horiz = T,y.intersp=0.5,x.intersp=0.5,text.width=0.1,bty = 'n')
 }
 my.pca(rld, my.targets$Group)
-
-
-
-# Cluster
-par(mfrow=c(3,1),mar=c(2,2,2,2))
-plot(hclust(dist(t(log.norm.counts))), labels=colData(dds)$Group, main = 'Log norm')
-plot(hclust(dist(t(assay(rld)))), labels=colData(rld)$Group, main = 'Regularized Log')
-plot(hclust(dist(t(assay(vsd)))), labels=colData(vsd)$Group, main = 'VST')
-
-
+my.pca(vsd, my.targets$Group)
 
 # --- Identificación de genes diferencialmente expresados
 
@@ -95,66 +92,55 @@ res_sfi_nit <- results(dds, contrast=c("Group",'SFI','NIT'))
 res_eli_nit <- results(dds, contrast=c("Group",'ELI','NIT'))
 res_eli_sfi <- results(dds, contrast=c("Group",'ELI','SFI'))
 
-# Número de genes con p-val ajustado menor de 0.1
-table(res_sfi_nit$padj < 0.1)
-table(res_eli_nit$padj < 0.1)
-table(res_eli_sfi$padj < 0.1)
-
-# Criterio más estricto, incrementando el umbral de log2 fold change
-res_sfi_nit_LFC1 <- results(dds, contrast=c("Group",'SFI','NIT'), lfcThreshold=1)
-res_eli_nit_LFC1 <- results(dds, contrast=c("Group",'ELI','NIT'), lfcThreshold=1)
-res_eli_sfi_LFC1 <- results(dds, contrast=c("Group",'ELI','SFI'), lfcThreshold=1)
-table(res_sfi_nit_LFC1$padj < 0.1)
-table(res_eli_nit_LFC1$padj < 0.1)
-table(res_eli_sfi_LFC1$padj < 0.1)
-
+# Número de genes con p-val ajustado menor de 0.05
 # If we consider a fraction of 10% false positives acceptable, we can consider all genes 
 # with an adjusted p value below 10% = 0.1 as significant. How many such genes are there?
-sum(res_sfi_nit$padj < 0.1, na.rm=TRUE)
-sum(res_eli_nit$padj < 0.1, na.rm=TRUE)
-sum(res_eli_sfi$padj < 0.1, na.rm=TRUE)
+sum(res_sfi_nit$padj < 0.05, na.rm=TRUE)
+sum(res_eli_nit$padj < 0.05, na.rm=TRUE)
+sum(res_eli_sfi$padj < 0.05, na.rm=TRUE)
 
 # Genes más significativos
-res_sfi_nit_Sig <- subset(res_sfi_nit, padj < 0.1)
-res_eli_nit_Sig <- subset(res_eli_nit, padj < 0.1)
-res_eli_sfi_Sig <- subset(res_eli_sfi, padj < 0.1)
+res_sfi_nit_Sig <- subset(res_sfi_nit, padj < 0.05)
+res_eli_nit_Sig <- subset(res_eli_nit, padj < 0.05)
+res_eli_sfi_Sig <- subset(res_eli_sfi, padj < 0.05)
 
-# Genes up-regulated
-head(res_sfi_nit_Sig[ order(res_sfi_nit_Sig$log2FoldChange, decreasing = TRUE), ])
-
-# MA-plot
+# Counts plot
+#A quick way to visualize the counts for a particular gene is to use the plotCounts
+plotCounts(dds, gene = rownames(res_sfi_nit_Sig)[which.min(res_sfi_nit_Sig$padj)], intgroup=c("Group"))
+plotCounts(dds, gene = rownames(res_eli_nit_Sig)[which.min(res_eli_nit_Sig$padj)], intgroup=c("Group"))
+plotCounts(dds, gene = rownames(res_eli_sfi_Sig)[which.min(res_eli_sfi_Sig$padj)], intgroup=c("Group"))
 
 # p-val hist
+hist(res_sfi_nit$pvalue[res_sfi_nit$baseMean > 1], xlab = 'p-valores', main = 'Histograma para SFI-NIT')
+hist(res_eli_nit$pvalue[res_eli_nit$baseMean > 1], xlab = 'p-valores', main = 'Histograma para ELI-NIT')
+hist(res_eli_sfi$pvalue[res_eli_sfi$baseMean > 1], xlab = 'p-valores', main = 'Histograma para ELI-SFI')
 
-# Plot of counts
+# MA-plot
+plotMA(res_sfi_nit, ylim=c(-4,4))
+plotMA(res_eli_nit, ylim=c(-4,4))
+plotMA(res_eli_sfi, ylim=c(-4,4))
 
-# Heatmap of top genes
-
-# Anotación
+# --- Anotación
 library("AnnotationDbi")
-columns(org.Hs.eg.db)
+library(org.Hs.eg.db)
 
 res_sfi_nit_Sig$symbol <- mapIds(org.Hs.eg.db,
-                     keys=row.names(res_sfi_nit_Sig),
-                     column="SYMBOL",
-                     keytype="ENSEMBL",
-                     multiVals="first")
+                                 keys=row.names(res_sfi_nit_Sig),
+                                 column="SYMBOL",
+                                 keytype="ENSEMBL",
+                                 multiVals="first")
 
 res_sfi_nit_Sig$entrez <- mapIds(org.Hs.eg.db,
-                    keys=row.names(res_sfi_nit_Sig),
-                    column="ENTREZID",
-                    keytype="ENSEMBL",
-                    multiVals="first")
+                                 keys=row.names(res_sfi_nit_Sig),
+                                 column="ENTREZID",
+                                 keytype="ENSEMBL",
+                                 multiVals="first")
 
 
+# Criterio más estricto, incrementando el umbral de log2 fold change
+#res_sfi_nit_LFC1 <- results(dds, contrast=c("Group",'SFI','NIT'), lfcThreshold=1)
+#res_eli_nit_LFC1 <- results(dds, contrast=c("Group",'ELI','NIT'), lfcThreshold=1)
+#res_eli_sfi_LFC1 <- results(dds, contrast=c("Group",'ELI','SFI'), lfcThreshold=1)
 
-
-
-
-
-
-
-
-
-
-
+# Genes up-regulated
+#head(res_sfi_nit_Sig[ order(res_sfi_nit_Sig$log2FoldChange, decreasing = TRUE), ])
