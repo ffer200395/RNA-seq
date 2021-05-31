@@ -1,6 +1,7 @@
 ## --- Paquetes necesarios para el análisis
 if (!require(DESeq2))BiocManager::install("DESeq2")
 if(!(require(dplyr))) install.packages("dplyr")
+if(!(require(ggfortify))) install.packages("ggfortify")
 
 ## --- Cargamos los datos
 counts <- read.csv('data/counts.csv', sep = ';', header = T, row.names = 1)
@@ -45,23 +46,31 @@ log.norm.counts <- log2(counts(estimateSizeFactors(dds), normalized=TRUE) + 1)
 rld <- rlog(dds)
 
 # Variance stabilizing transformation
-vsd <- varianceStabilizingTransformation(dds)
+library(DESeq2)
+vsd <- vst(dds)
+
+# --- EDA: Scatter plots, boxplots, PCA, cluster, heatmaps
 
 # Scatter plots
-par(mfrow=c(2,2))
-plot(log2(counts(dds)[,1:2] + 1), cex=.1)
-plot(log.norm.counts[,1:2], cex=.1)
-plot(assay(rld)[,1:2], cex=.1)
-plot(assay(vsd)[,1:2], cex=.1)
+par(mfrow=c(2,2),mar=c(2,2,2,2))
+plot(log2(counts(dds)[,1:2] + 1), cex=.1, main = 'Sin normalizar')
+plot(log.norm.counts[,1:2], cex=.1, main = 'Log norm')
+plot(assay(rld)[,1:2], cex=.1, main = 'Regularized Log')
+plot(assay(vsd)[,1:2], cex=.1, main = 'VST')
 
 # Boxplots
 par(mfrow=c(2,2))
-boxplot(log2(counts(dds) + 1), names=my.targets$SRA_Sample, las=2)
-boxplot(log.norm.counts, names=my.targets$SRA_Sample, las=2)
-boxplot(assay(rld), names=my.targets$SRA_Sample, las=2)
-boxplot(assay(vsd), names=my.targets$SRA_Sample, las=2)
+boxplot(log2(counts(dds) + 1), names=my.targets$SRA_Sample, las=2, main = 'Sin normalizar')
+boxplot(log.norm.counts, names=my.targets$SRA_Sample, las=2, main = 'Log norm')
+boxplot(assay(rld), names=my.targets$SRA_Sample, las=2, main = 'Regularized Log')
+boxplot(assay(vsd), names=my.targets$SRA_Sample, las=2, main = 'VST')
 
 # PCA
+par(mfrow=c(1,2))
+
+plotPCA(rld, intgroup="Group")
+DESeq2::plotPCA(vsd, intgroup="Group")
+test = prcomp(rld)
 
 # Cluster
 
