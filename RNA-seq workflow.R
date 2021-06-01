@@ -2,6 +2,7 @@
 if (!require(DESeq2))BiocManager::install("DESeq2")
 if (!(require(dplyr))) install.packages("dplyr")
 if (!require(VennDiagram)) install.packages("VennDiagram")
+if (!require(pheatmap)) install.packages("pheatmap")
 
 ## --- Cargamos los datos
 counts <- read.csv('data/counts.csv', sep = ';', header = T, row.names = 1)
@@ -146,27 +147,31 @@ res_eli_sfi_Sig@nrows
 
 # Diagrama de Venn para visualizar el número de genes en común
 library(VennDiagram)
-venn.diagram(test,category.names = c("eli_nit" , "eli_sfi" , "sfi_nit"),output=TRUE,filename='testVenn1.jpg')
+get.num.inter <- function(data1,data2){return(length(intersect(as.array(row.names(data1)),as.array(row.names(data2)))))}
+draw.triple.venn(area1 = nrow(res_eli_nit_Sig), area2 = nrow(res_eli_sfi_Sig), area3 = nrow(res_sfi_nit_Sig), 
+                 n12 = get.num.inter(res_eli_nit_Sig,res_eli_sfi_Sig), 
+                 n23 = get.num.inter(res_eli_sfi_Sig,res_sfi_nit_Sig), 
+                 n13 = get.num.inter(res_eli_nit_Sig,res_sfi_nit_Sig), 
+                 n123 = length(intersect(intersect(as.array(row.names(res_eli_nit_Sig)),as.array(row.names(res_sfi_nit_Sig))),as.array(row.names(res_eli_sfi_Sig)))), 
+                 category =  c("eli_nit" , "eli_sfi" , "sfi_nit"), lty = "blank", 
+                 fill = c("skyblue", "pink1", "mediumorchid"))
 
-length(intersect(as.array(row.names(res_eli_nit_Sig)),as.array(row.names(res_eli_sfi_Sig))))
-length(intersect(as.array(row.names(res_eli_nit_Sig)),as.array(row.names(res_sfi_nit_Sig))))
-length(intersect(as.array(row.names(res_eli_sfi_Sig)),as.array(row.names(res_sfi_nit_Sig))))
-test <- list(as.array(row.names(res_eli_nit_Sig)), 
-as.array(row.names(res_eli_sfi_Sig)),
-as.array(row.names(res_sfi_nit_Sig)))
+# Heatmap
+library(pheatmap)
+resSort <- res_eli_nit_Sig[order(res_eli_nit_Sig$padj),]
+topgenes <- head(rownames(resSort),20)
+mat <- as.data.frame(rld@assays@data@listData)[topgenes,]
+mat <- mat - rowMeans(mat)
+colnames(mat) <- colnames(mat)
+df <- as.data.frame(dds@colData[,c("Group")])
+rownames(df) <- colnames(mat)
+pheatmap(mat, annotation_col=df)
 
-# Generate 3 sets of 200 words
-set1 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="")
-set2 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="")
-set3 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="")
 
-# Chart
-venn.diagram(
-  x = list(set1, set2, set3),
-  category.names = c("Set 1" , "Set 2 " , "Set 3"),
-  filename = '#14_venn_diagramm.png',
-  output=TRUE
-)
+
+
+
+
 
 
 
