@@ -141,12 +141,25 @@ res_sfi_nit_Sig@nrows
 res_eli_nit_Sig@nrows
 res_eli_sfi_Sig@nrows
 
-# --- Patrones de expresión y comparación entre las distintas comparaciones
-
-# Volcano-plot
-## Volcano plot
+####
 library(ggplot2)
-ggplot(test)
+test = as.data.frame(res_eli_nit_Sig@listData)
+ggplot(data=test, aes(x=test$log2FoldChange, y=-log10(test$padj))) + geom_point()
+# add a column of NAs
+test$diffexpressed <- "NO"
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "UP" 
+test$diffexpressed[test$log2FoldChange > 0.6 & test$pvalue < 0.05] <- "UP"
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+test$diffexpressed[test$log2FoldChange < -0.6 & test$pvalue < 0.05] <- "DOWN"
+
+
+
+
+ggplot(data=test, aes(x=log2FoldChange, y=-log10(padj), col=diffexpressed)) + 
+  geom_point() + 
+  theme_minimal() +
+  geom_text()
+#plot(x=test$log2FoldChange, y=-log10(test$padj), data=test)
 #geom_point(aes(x=log2FoldChange, y=-log10(padj), colour=0.01)) 
 
 
