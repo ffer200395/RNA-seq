@@ -26,6 +26,7 @@ sum(colnames(my.counts) == rownames(my.targets))
 my.targets$Group %>% as.factor() %>% relevel('NIT') -> my.targets$Group
 
 # Construimos el objeto DESeqDataSet a partir de Targets y Counts
+library(DESeq2)
 dds <- DESeqDataSetFromMatrix(countData = my.counts, colData = my.targets, design = ~ Group)
 
 # --- Preprocesado de los datos: filtraje, normalización y estabilización de la varianza
@@ -45,13 +46,12 @@ log.norm.counts <- log2(counts(estimateSizeFactors(dds), normalized=TRUE) + 1)
 rld <- rlog(dds)
 
 # Variance stabilizing transformation
-library(DESeq2)
 vsd <- vst(dds)
 
 # --- EDA: Scatter plots, boxplots, cluster y PCA
 
 # Scatter plots
-par(mfrow=c(2,2),mar=c(2,2,2,2))
+par(mfrow=c(2,2),mar=c(1,1,1,1))
 plot(log2(counts(dds)[,1:2] + 1), cex=.1, main = 'Sin normalizar')
 plot(log.norm.counts[,1:2], cex=.1, main = 'Log norm')
 plot(assay(rld)[,1:2], cex=.1, main = 'Regularized Log')
@@ -65,7 +65,7 @@ boxplot(assay(rld), names=my.targets$SRA_Sample, las=2, main = 'Regularized Log'
 boxplot(assay(vsd), names=my.targets$SRA_Sample, las=2, main = 'VST')
 
 # Cluster
-par(mfrow=c(3,1),mar=c(2,2,2,2))
+par(mfrow=c(3,1),mar=c(1,1,1,1))
 plot(hclust(dist(t(log.norm.counts))), labels=colData(dds)$Group, main = 'Log norm')
 plot(hclust(dist(t(assay(rld)))), labels=colData(rld)$Group, main = 'Regularized Log')
 plot(hclust(dist(t(assay(vsd)))), labels=colData(vsd)$Group, main = 'VST')
@@ -124,17 +124,29 @@ plotMA(res_eli_sfi, ylim=c(-4,4))
 library("AnnotationDbi")
 library(org.Hs.eg.db)
 
-res_sfi_nit_Sig$symbol <- mapIds(org.Hs.eg.db,
-                                 keys=row.names(res_sfi_nit_Sig),
-                                 column="SYMBOL",
-                                 keytype="ENSEMBL",
-                                 multiVals="first")
+my.annotation <- function(data){
+  claves <- substr(rownames(data), 1, 15)
+  data$symbol <- mapIds(org.Hs.eg.db, keys=claves, column="SYMBOL", keytype="ENSEMBL", multiVals="first")
+  data$entrez <- mapIds(org.Hs.eg.db, keys=claves, column="ENTREZID", keytype="ENSEMBL", multiVals="first")
+  return(data[complete.cases(data), ])
+}
 
-res_sfi_nit_Sig$entrez <- mapIds(org.Hs.eg.db,
-                                 keys=row.names(res_sfi_nit_Sig),
-                                 column="ENTREZID",
-                                 keytype="ENSEMBL",
-                                 multiVals="first")
+# Anotamos los genes más significativos
+res_sfi_nit_Sig <- my.annotation(res_sfi_nit_Sig)
+res_eli_nit_Sig <- my.annotation(res_eli_nit_Sig)
+res_eli_sfi_Sig <- my.annotation(res_eli_sfi_Sig)
+
+# Cuántos quedan
+res_sfi_nit_Sig@nrows
+res_eli_nit_Sig@nrows
+res_eli_sfi_Sig@nrows
+
+
+
+
+
+
+
 
 
 # Criterio más estricto, incrementando el umbral de log2 fold change
