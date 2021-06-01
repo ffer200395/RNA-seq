@@ -1,6 +1,6 @@
 ## --- Paquetes necesarios para el análisis
 if (!require(DESeq2))BiocManager::install("DESeq2")
-if(!(require(dplyr))) install.packages("dplyr")
+if (!(require(dplyr))) install.packages("dplyr")
 
 ## --- Cargamos los datos
 counts <- read.csv('data/counts.csv', sep = ';', header = T, row.names = 1)
@@ -141,7 +141,13 @@ res_sfi_nit_Sig@nrows
 res_eli_nit_Sig@nrows
 res_eli_sfi_Sig@nrows
 
+# --- Patrones de expresión y comparación entre las distintas comparaciones
 
+# Volcano-plot
+## Volcano plot
+library(ggplot2)
+ggplot(test)
+#geom_point(aes(x=log2FoldChange, y=-log10(padj), colour=0.01)) 
 
 
 
