@@ -1,6 +1,7 @@
 ## --- Paquetes necesarios para el análisis
 if (!require(DESeq2))BiocManager::install("DESeq2")
 if (!(require(dplyr))) install.packages("dplyr")
+if (!require(VennDiagram)) install.packages("VennDiagram")
 
 ## --- Cargamos los datos
 counts <- read.csv('data/counts.csv', sep = ';', header = T, row.names = 1)
@@ -92,17 +93,17 @@ res_sfi_nit <- results(dds, contrast=c("Group",'SFI','NIT'))
 res_eli_nit <- results(dds, contrast=c("Group",'ELI','NIT'))
 res_eli_sfi <- results(dds, contrast=c("Group",'ELI','SFI'))
 
-# Número de genes con p-val ajustado menor de 0.05
+# Número de genes con p-val ajustado menor de 0.1
 # If we consider a fraction of 10% false positives acceptable, we can consider all genes 
 # with an adjusted p value below 10% = 0.1 as significant. How many such genes are there?
-sum(res_sfi_nit$padj < 0.05, na.rm=TRUE)
-sum(res_eli_nit$padj < 0.05, na.rm=TRUE)
-sum(res_eli_sfi$padj < 0.05, na.rm=TRUE)
+sum(res_sfi_nit$padj < 0.1, na.rm=TRUE)
+sum(res_eli_nit$padj < 0.1, na.rm=TRUE)
+sum(res_eli_sfi$padj < 0.1, na.rm=TRUE)
 
 # Genes más significativos
-res_sfi_nit_Sig <- subset(res_sfi_nit, padj < 0.05)
-res_eli_nit_Sig <- subset(res_eli_nit, padj < 0.05)
-res_eli_sfi_Sig <- subset(res_eli_sfi, padj < 0.05)
+res_sfi_nit_Sig <- subset(res_sfi_nit, padj < 0.1)
+res_eli_nit_Sig <- subset(res_eli_nit, padj < 0.1)
+res_eli_sfi_Sig <- subset(res_eli_sfi, padj < 0.1)
 
 # Counts plot
 #A quick way to visualize the counts for a particular gene is to use the plotCounts
@@ -141,7 +142,41 @@ res_sfi_nit_Sig@nrows
 res_eli_nit_Sig@nrows
 res_eli_sfi_Sig@nrows
 
-####
+# --- Patrones de expresión y agrupación de las muestras
+
+# Diagrama de Venn para visualizar el número de genes en común
+library(VennDiagram)
+venn.diagram(test,category.names = c("eli_nit" , "eli_sfi" , "sfi_nit"),output=TRUE,filename='testVenn1.jpg')
+
+length(intersect(as.array(row.names(res_eli_nit_Sig)),as.array(row.names(res_eli_sfi_Sig))))
+length(intersect(as.array(row.names(res_eli_nit_Sig)),as.array(row.names(res_sfi_nit_Sig))))
+length(intersect(as.array(row.names(res_eli_sfi_Sig)),as.array(row.names(res_sfi_nit_Sig))))
+test <- list(as.array(row.names(res_eli_nit_Sig)), 
+as.array(row.names(res_eli_sfi_Sig)),
+as.array(row.names(res_sfi_nit_Sig)))
+
+# Generate 3 sets of 200 words
+set1 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="")
+set2 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="")
+set3 <- paste(rep("word_" , 200) , sample(c(1:1000) , 200 , replace=F) , sep="")
+
+# Chart
+venn.diagram(
+  x = list(set1, set2, set3),
+  category.names = c("Set 1" , "Set 2 " , "Set 3"),
+  filename = '#14_venn_diagramm.png',
+  output=TRUE
+)
+
+
+
+
+
+
+
+
+
+# Volcano plot
 library(ggplot2)
 test = as.data.frame(res_eli_nit_Sig@listData)
 ggplot(data=test, aes(x=test$log2FoldChange, y=-log10(test$padj))) + geom_point()
@@ -152,20 +187,12 @@ test$diffexpressed[test$log2FoldChange > 0.6 & test$pvalue < 0.05] <- "UP"
 # if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
 test$diffexpressed[test$log2FoldChange < -0.6 & test$pvalue < 0.05] <- "DOWN"
 
-
-
-
 ggplot(data=test, aes(x=log2FoldChange, y=-log10(padj), col=diffexpressed)) + 
   geom_point() + 
   theme_minimal() +
   geom_text()
 #plot(x=test$log2FoldChange, y=-log10(test$padj), data=test)
 #geom_point(aes(x=log2FoldChange, y=-log10(padj), colour=0.01)) 
-
-
-
-
-
 
 
 # Criterio más estricto, incrementando el umbral de log2 fold change
