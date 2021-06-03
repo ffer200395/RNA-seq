@@ -53,14 +53,14 @@ vsd <- vst(dds)
 # --- EDA: Scatter plots, boxplots, cluster y PCA
 
 # Scatter plots
-par(mfrow=c(2,2),mar=c(1,1,1,1))
+par(mfrow=c(2,2),mar=c(2,2,2,2))
 plot(log2(counts(dds)[,1:2] + 1), cex=.1, main = 'Sin normalizar')
 plot(log.norm.counts[,1:2], cex=.1, main = 'Log norm')
 plot(assay(rld)[,1:2], cex=.1, main = 'Regularized Log')
 plot(assay(vsd)[,1:2], cex=.1, main = 'VST')
 
 # Boxplots
-par(mfrow=c(2,2))
+par(mfrow=c(2,2),mar=c(5,5,5,5))
 boxplot(log2(counts(dds) + 1), names=my.targets$SRA_Sample, las=2, main = 'Sin normalizar')
 boxplot(log.norm.counts, names=my.targets$SRA_Sample, las=2, main = 'Log norm')
 boxplot(assay(rld), names=my.targets$SRA_Sample, las=2, main = 'Regularized Log')
@@ -73,16 +73,10 @@ plot(hclust(dist(t(assay(rld)))), labels=colData(rld)$Group, main = 'Regularized
 plot(hclust(dist(t(assay(vsd)))), labels=colData(vsd)$Group, main = 'VST')
 
 # PCA
-my.pca <- function(datos, grupos){
-  pca_res <- prcomp(t(assay(datos)), scale = FALSE)
-  pca_df <- as.data.frame(pca_res$x)
-  pca_df$Group <- grupos
-  pcts <- round(pca_res$sdev^2/sum(pca_res$sdev^2)*100,1)
-  plot(x = pca_df$PC1, y = pca_df$PC2, col = pca_df$Group, xlab = paste0('PC1 ',pcts[1],'%'), ylab = paste0('PC2 ',pcts[2],'%'))
-  legend("bottomleft", legend = unique(pca_df$Group), col = unique(pca_df$Group), pch =19, horiz = T,y.intersp=0.5,x.intersp=0.5,text.width=0.1,bty = 'n')
-}
-my.pca(rld, my.targets$Group)
-my.pca(vsd, my.targets$Group)
+library(ggplot2)
+plotPCA(DESeqTransform(SummarizedExperiment(log.norm.counts, colData=colData(dds))), intgroup="Group")+ggtitle('PCA para log2 norm')+theme(plot.title = element_text(hjust = 0.5))
+plotPCA(rld, intgroup="Group")+ggtitle('PCA para Rlog')+theme(plot.title = element_text(hjust = 0.5))
+plotPCA(vsd, intgroup="Group")+ggtitle('PCA con VST')+theme(plot.title = element_text(hjust = 0.5))
 
 # --- Identificación de genes diferencialmente expresados
 
@@ -108,19 +102,24 @@ res_eli_sfi_Sig <- subset(res_eli_sfi, padj < 0.1)
 
 # Counts plot
 #A quick way to visualize the counts for a particular gene is to use the plotCounts
-plotCounts(dds, gene = rownames(res_sfi_nit_Sig)[which.min(res_sfi_nit_Sig$padj)], intgroup=c("Group"))
-plotCounts(dds, gene = rownames(res_eli_nit_Sig)[which.min(res_eli_nit_Sig$padj)], intgroup=c("Group"))
-plotCounts(dds, gene = rownames(res_eli_sfi_Sig)[which.min(res_eli_sfi_Sig$padj)], intgroup=c("Group"))
+par(mfrow=c(1,3),mar=c(2,2,2,2))
+plotCounts(dds, gene = rownames(res_sfi_nit_Sig)[which.min(res_sfi_nit_Sig$padj)], intgroup=c("Group"), main = 'SFI vs NIT')
+plotCounts(dds, gene = rownames(res_eli_nit_Sig)[which.min(res_eli_nit_Sig$padj)], intgroup=c("Group"), main = 'ELI vs NIT')
+plotCounts(dds, gene = "ENSG00000211654.2", intgroup=c("Group"), main = 'ELI vs SFI')
+#plotCounts(dds, gene = rownames(res_eli_sfi_Sig)[which.min(res_eli_sfi_Sig$padj)], intgroup=c("Group"), main = 'ELI vs SFI')
+
 
 # p-val hist
+par(mfrow=c(1,3),mar=c(2,2,2,2))
 hist(res_sfi_nit$pvalue[res_sfi_nit$baseMean > 1], xlab = 'p-valores', main = 'Histograma para SFI-NIT')
 hist(res_eli_nit$pvalue[res_eli_nit$baseMean > 1], xlab = 'p-valores', main = 'Histograma para ELI-NIT')
 hist(res_eli_sfi$pvalue[res_eli_sfi$baseMean > 1], xlab = 'p-valores', main = 'Histograma para ELI-SFI')
 
 # MA-plot
-plotMA(res_sfi_nit, ylim=c(-4,4))
-plotMA(res_eli_nit, ylim=c(-4,4))
-plotMA(res_eli_sfi, ylim=c(-4,4))
+par(mfrow=c(1,3),mar=c(2,2,2,2))
+plotMA(res_sfi_nit, ylim=c(-4,4), main = 'MA plot SFI-NIT')
+plotMA(res_eli_nit, ylim=c(-4,4), main = 'MA plot ELI-NIT')
+plotMA(res_eli_sfi, ylim=c(-4,4), main = 'MA plot ELI-SFI')
 
 # --- Anotación
 library("AnnotationDbi")
@@ -169,18 +168,6 @@ pheatmap(mat, annotation_col=df)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 # Volcano plot
 library(ggplot2)
 test = as.data.frame(res_eli_nit_Sig@listData)
@@ -199,11 +186,14 @@ ggplot(data=test, aes(x=log2FoldChange, y=-log10(padj), col=diffexpressed)) +
 #plot(x=test$log2FoldChange, y=-log10(test$padj), data=test)
 #geom_point(aes(x=log2FoldChange, y=-log10(padj), colour=0.01)) 
 
-
-# Criterio más estricto, incrementando el umbral de log2 fold change
-#res_sfi_nit_LFC1 <- results(dds, contrast=c("Group",'SFI','NIT'), lfcThreshold=1)
-#res_eli_nit_LFC1 <- results(dds, contrast=c("Group",'ELI','NIT'), lfcThreshold=1)
-#res_eli_sfi_LFC1 <- results(dds, contrast=c("Group",'ELI','SFI'), lfcThreshold=1)
-
-# Genes up-regulated
-#head(res_sfi_nit_Sig[ order(res_sfi_nit_Sig$log2FoldChange, decreasing = TRUE), ])
+#PCA
+my.pca <- function(datos, grupos){
+  pca_res <- prcomp(t(assay(datos)), scale = FALSE)
+  pca_df <- as.data.frame(pca_res$x)
+  pca_df$Group <- grupos
+  pcts <- round(pca_res$sdev^2/sum(pca_res$sdev^2)*100,1)
+  plot(x = pca_df$PC1, y = pca_df$PC2, col = pca_df$Group, xlab = paste0('PC1 ',pcts[1],'%'), ylab = paste0('PC2 ',pcts[2],'%'))
+  legend("bottomleft", legend = unique(pca_df$Group), col = unique(pca_df$Group), pch =19, horiz = T,y.intersp=0.5,x.intersp=0.5,text.width=0.1,bty = 'n')
+}
+my.pca(rld, my.targets$Group)
+my.pca(vsd, my.targets$Group)
