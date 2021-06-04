@@ -1,9 +1,9 @@
 ## --- Paquetes necesarios para el análisis
 if (!require(DESeq2))BiocManager::install("DESeq2")
+if (!require(GOstats))BiocManager::install("GOstats")
 if (!(require(dplyr))) install.packages("dplyr")
 if (!require(VennDiagram)) install.packages("VennDiagram")
 if (!require(pheatmap)) install.packages("pheatmap")
-if (!require(GOstats))BiocManager::install("GOstats")
 
 ## --- Cargamos los datos
 counts <- read.csv('data/counts.csv', sep = ';', header = T, row.names = 1)
@@ -12,7 +12,7 @@ targets <- read.csv('data/targets.csv', sep = ',', header = T)
 # --- Creación del subconjunto del análisis (usar datos de expresión RNA-Seq) y preparación de los datos
 library(dplyr)
 set.seed(1234)
-# Filtramos para tener sólo datos RNA Seq (NGS) y elegimos 10 muestras de cada grupo
+# Elegimos 10 muestras de cada grupo
 my.targets <- targets %>% group_by(Group) %>% sample_n(10)
 
 # Modificamos los nombres de las muestras para que sea igual que las columnas de la tabla counts
@@ -61,7 +61,7 @@ plot(assay(rld)[,1:2], cex=.1, main = 'Regularized Log')
 plot(assay(vsd)[,1:2], cex=.1, main = 'VST')
 
 # Boxplots
-par(mfrow=c(2,2),mar=c(5,5,5,5))
+par(mfrow=c(2,2),mar=c(2,2,2,2))
 boxplot(log2(counts(dds) + 1), names=my.targets$SRA_Sample, las=2, main = 'Sin normalizar')
 boxplot(log.norm.counts, names=my.targets$SRA_Sample, las=2, main = 'Log norm')
 boxplot(assay(rld), names=my.targets$SRA_Sample, las=2, main = 'Regularized Log')
@@ -89,9 +89,8 @@ res_sfi_nit <- results(dds, contrast=c("Group",'SFI','NIT'))
 res_eli_nit <- results(dds, contrast=c("Group",'ELI','NIT'))
 res_eli_sfi <- results(dds, contrast=c("Group",'ELI','SFI'))
 
-# Número de genes con p-val ajustado menor de 0.1
-# If we consider a fraction of 10% false positives acceptable, we can consider all genes 
-# with an adjusted p value below 10% = 0.1 as significant. How many such genes are there?
+# Número de genes con p-val ajustado menor de 0.1 
+#(Si aceptamos un 10% de falsos positivos entonces los genes con p-val<0.1 son significativos)
 sum(res_sfi_nit$padj < 0.1, na.rm=TRUE)
 sum(res_eli_nit$padj < 0.1, na.rm=TRUE)
 sum(res_eli_sfi$padj < 0.1, na.rm=TRUE)
@@ -101,17 +100,15 @@ res_sfi_nit_Sig <- subset(res_sfi_nit, padj < 0.1)
 res_eli_nit_Sig <- subset(res_eli_nit, padj < 0.1)
 res_eli_sfi_Sig <- subset(res_eli_sfi, padj < 0.1)
 
-# Counts plot
-#A quick way to visualize the counts for a particular gene is to use the plotCounts
-par(mfrow=c(1,3),mar=c(2,2,2,2))
+# Counts plot para visualizar el conteo para un gen en concreto
 plotCounts(dds, gene = rownames(res_sfi_nit_Sig)[which.min(res_sfi_nit_Sig$padj)], intgroup=c("Group"))
 
 # p-val hist
-par(mfrow=c(1,3),mar=c(2,2,2,2))
-hist(res_sfi_nit$pvalue[res_sfi_nit$baseMean > 1], xlab = 'p-valores', main = 'Histograma para SFI-NIT')
-hist(res_eli_nit$pvalue[res_eli_nit$baseMean > 1], xlab = 'p-valores', main = 'Histograma para ELI-NIT')
-hist(res_eli_sfi$pvalue[res_eli_sfi$baseMean > 1], xlab = 'p-valores', main = 'Histograma para ELI-SFI')
-
+par(mfrow=c(1,3))
+hist(res_sfi_nit_Sig$padj, xlab = 'p-val adj.', main = 'Histograma para SFI-NIT', freq=F, ylim = c(0,50))
+hist(res_eli_nit_Sig$padj, xlab = 'p-val adj.', main = 'Histograma para ELI-NIT', freq=F, ylim = c(0,50))
+hist(res_eli_sfi_Sig$padj, xlab = 'p-val adj.', main = 'Histograma para ELI-SFI', freq=F, ylim = c(0,50))
+ 
 # MA-plot
 par(mfrow=c(1,3),mar=c(2,2,2,2))
 plotMA(res_sfi_nit, ylim=c(-4,4), main = 'MA plot SFI-NIT')
@@ -172,14 +169,17 @@ draw.triple.venn(area1 = nrow(res_eli_nit_Sig), area2 = nrow(res_eli_sfi_Sig), a
 
 # Heatmap
 library(pheatmap)
-resSort <- res_eli_nit_Sig[order(res_eli_nit_Sig$padj),]
-topgenes <- head(rownames(resSort),20)
-mat <- as.data.frame(rld@assays@data@listData)[topgenes,]
+# Ordenamos los datos de mayor a menor conteo normalizado y seleccionamos los primeros 20
+resSort <- order(rowVars(assay(vsd)), decreasing = TRUE)[c(1:20)]
+# Obtenemos la id de esos genes
+topgenes <-  row.names(assay(vsd))[resSort]
+# Seleccionamos los conteos normalizados de esos genes
+mat <- assay(vsd)[topgenes, ]
 mat <- mat - rowMeans(mat)
-colnames(mat) <- colnames(mat)
-df <- as.data.frame(dds@colData[,c("Group")])
+df <- as.data.frame(colData(vsd)[, c("Group")])
 rownames(df) <- colnames(mat)
-pheatmap(mat, annotation_col=df)
+pheatmap(mat, annotation_col = df)
+
 
 # --- Análisis de significación biológica
 library(GOstats)
