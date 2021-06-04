@@ -4,6 +4,7 @@ if (!require(GOstats))BiocManager::install("GOstats")
 if (!(require(dplyr))) install.packages("dplyr")
 if (!require(VennDiagram)) install.packages("VennDiagram")
 if (!require(pheatmap)) install.packages("pheatmap")
+if (!require(tm)) install.packages("tm")
 
 ## --- Cargamos los datos
 counts <- read.csv('data/counts.csv', sep = ';', header = T, row.names = 1)
@@ -158,7 +159,6 @@ get.volcano(res_eli_sfi_Sig, 0.05, 2.5, 'Volcano plot ELI_SFI')
 # Diagrama de Venn para visualizar el número de genes en común
 library(VennDiagram)
 get.num.inter <- function(data1,data2){return(length(intersect(as.array(row.names(data1)),as.array(row.names(data2)))))}
-dev.off()
 draw.triple.venn(area1 = nrow(res_eli_nit_Sig), area2 = nrow(res_eli_sfi_Sig), area3 = nrow(res_sfi_nit_Sig), 
                  n12 = get.num.inter(res_eli_nit_Sig,res_eli_sfi_Sig), 
                  n23 = get.num.inter(res_eli_sfi_Sig,res_sfi_nit_Sig), 
