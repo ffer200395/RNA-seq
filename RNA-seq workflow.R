@@ -180,17 +180,38 @@ df <- as.data.frame(colData(vsd)[, c("Group")])
 rownames(df) <- colnames(mat)
 pheatmap(mat, annotation_col = df)
 
-
 # --- Análisis de significación biológica
 library(GOstats)
 
+# Tabla a estudiar
+topTable <- res_eli_nit_Sig
+
 # Almacenamos todo el conjunto de genes y los genes más diferenciados según un umbral del p-valor
-entrezUni = unique(res_eli_nit_Sig$entrez)
-whichgenes = which(res_eli_nit_Sig$padj<0.01)
-geneIds = unique(res_eli_nit_Sig[whichgenes,]$entrez)
+entrezUni <- unique(my.annotation(counts)$entrez) # Usamos la tabla counts que contiene todos los genes del análisis
+whichgenes <- which(topTable$padj<0.01)
+geneIds <- unique(topTable[whichgenes,]$entrez)
 
-# Definimos los hyper parámetros para realizar las búsquedas
-paramsGO <- new("GOHyperGParams", geneIds =geneIds, universeGeneIds = entrezUni, annotation = "hgu133plus2.db", ontology = "BP", testDirection = "over", pvalueCutoff=0.01) 
+# Definimos los hiperparámetros para realizar las búsquedas
+paramsGO <- new("GOHyperGParams", geneIds =geneIds, universeGeneIds = entrezUni, annotation = "org.Hs.eg.db", ontology = "BP", testDirection = "over", pvalueCutoff=0.001) 
 
-# Instanciamos ambos tests
+# Ejecutamos el análisis
 hypGO <- hyperGTest(paramsGO)
+
+# Almacenamos los resultados del análisis en un informe html
+compare <- 'ELIvsNIT'
+htmlReport(hypGO, file = paste0(compare,'_GO.html'))
+
+# --- Términos
+library(tm)
+# Palabras que no queremos incluir
+my.stopWords <- c('of', 'the', 'to', 'in', 'and', 'terms')
+
+# Obtenemos los términos obtenidos en el análisis y los filtramos
+raw_terms <- removeWords(paste(tolower(summary(hypGO)$Term),collapse=""),my.stopWords) 
+terms <- as.array(strsplit(raw_terms, "\\W"))
+
+# Ordenamos los terminos por su aparición
+topTerms <- as.data.frame(sort(table(terms), decreasing=TRUE)[c(2:11)])
+
+# Ploteamos el Top 10
+barplot(height=topTerms$Freq, names=topTerms$terms, col="#CCFF66",las=2,horiz = F,main = 'Términos Top 10',ylim = c(0,200))
