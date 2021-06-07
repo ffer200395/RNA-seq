@@ -3,69 +3,148 @@ title: "RNA-Seq Tiroides"
 author: "Félix Francisco Enríquez Romero"
 date: "4/6/2021"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
     number_sections: yes
     theme: lumen
+  pdf_document:
+    toc: yes
 ---
 Repositorio en github: <https://github.com/ffer200395/RNA-seq.git>
 ```{r setup, include=FALSE}
 library(knitr)
-knitr::opts_chunk$set(echo = T, eval = FALSE)
+knitr::opts_chunk$set(echo = F, eval = FALSE)
 ```
 
 # Abstract
 Una de las tareas básicas en el análisis de datos de conteos procedentes de secuenciación de ARN (ARN-seq) es la detección de genes diferencialmente expresados. 
 
-Una cuestión de gran relevancia en el análisis es la cuantificación e inferencia estadística de cambios sistemáticos entre condiciones frente a la variabilidad entre las muestras dentro de una misma condición.
+Una cuestión de gran relevancia en el análisis es la cuantificación e inferencia estadística de cambios sistemáticos entre condiciones frente a la variabilidad entre las muestras bajo una misma condición.
 
 # Objetivos
-En este estudio se muestra una propuesta de workflow de análisis para la identificación de genes diferencialmente expresados entre tejidos del tiroides que han recibido 3 tipos de infiltración.
+En este estudio se muestra una propuesta del workflow de análisis para la identificación de genes diferencialmente expresados entre tejidos del tiroides que han recibido 3 tipos de infiltración.
 
 El objetivo de este estudio es doble ya que:
 
--Primero se realiza una exploración inicial de los datos (EDA) a fin de evaluar la calidad de los mismos y explorar las relaciones entre muestras.
+- Primero se realiza una exploración inicial de los datos (EDA) a fin de evaluar la calidad de los mismos y explorar las relaciones entre muestras.
 
--Posteriormente se realiza un análisis de expresión génica diferencial que nos permita explorar los resultados visualmente.
+- Posteriormente se realiza un análisis de expresión génica diferencial que nos permita explorar los resultados visualmente.
 
 # Materiales y Métodos
-*Tipo de datos, tipo de experimento, diseño experimental,...
 
+## Naturaleza de los datos y experimento
 Partimos de los archivos counts.csv y targets.csv:
 
--El archivo **counts.csv** contiene los datos de conteo, estos datos están conformados por una tabla que nos indica, para cada muestra (columna) el número de fragmentos secuenciados que han sido asignados a cada gen (fila). Inicialmente son 292 muestras y 56202 genes.
+- El archivo **counts.csv** contiene los datos de conteo procedentes de secuenciación de ARN (ARN-seq) de tejidos del tiroides. Estos datos están conformados por una tabla que nos indica, para cada muestra (columna) el número de fragmentos secuenciados que han sido asignados a cada gen (fila). Inicialmente son 292 muestras y 56202 genes.
 
--El archivo **targets.csv** contiene información sobre cada muestra del experimento en formato tabla. Cada una de las filas representa la información acerca de una muestra, es por ello que en número de filas de esta tabla coincide con el número de columnas de la tabla proveniente del archivo counts.csv. Las columnas de la tabla target representan: el identificador de cada muestra, tipo de experimento, de que parte del cuerpo proviene el tejido, el sexo del sujeto del que fue extraída la muestra así como el grupo experimental al que pertenece la misma.
+- El archivo **targets.csv** contiene información sobre cada muestra del experimento en formato tabla. Cada una de las filas representa la información acerca de una muestra, es por ello que el número de filas de esta tabla coincide con el número de columnas de la tabla proveniente del archivo counts.csv. Las columnas de la tabla target representan: el identificador de cada muestra, tipo de experimento, de que parte del cuerpo proviene el tejido, el sexo del sujeto del que fue extraída la muestra así como el grupo experimental al que pertenece la misma.
 
--Hablar de los grupos!! Cuales y cuantos
+En la columna Group de la tabla targets se especifica el **grupo experimental** al que pertenece cada muestra, estos son:
 
+  - Not infiltrated tissues (**NIT**).
+  - Small focal infiltrates (**SFI**).
+  - Extensive lymphoid infiltrates (**ELI**).
+  
+Se realizan **3 comparaciones** de la expresión génica **entre** los **grupos** experimentales, estas son:
 
+  - Muestras del grupo NIT frente a las muestras del grupo SFI.
+  - Muestras del grupo NIT frente a las del grupo ELI.
+  - Muestras del grupo SFI frente a las del grupo ELI.
+  
+## Métodos y herramientas
+  
+El paquete **DESeq2** de **Bioconductor** nos provee de métodos que permiten testear la expresión génica diferencial. Además el paquete **GOstats** nos permite realizar un análisis de la significación biológica de los genes que han sido identificados con diferencialmente expresados entre los grupos.
 
-*Métodos y herramientas...Pasos del pipeline (descrip general)... Software/Paquetes..¿El qué se ha hecho?
--El paquete DESeq2 nos provee de métodos que permiten testear la expresión diferencial...
+Para la visualización se usan funciones del paquee **ggplot2** y funciones propias del paquete base de R.
 
--Realizaremos un análisis de expresión génica diferencial usando paquetes de Bioconductor...
+Los **pasos** que se han seguido para realizar el análisis son:
 
--Gene-level count dataset para análisis de expresión diferencial de genes...
-*Descripción cualitativa de los pasos del pipeline...¿Cómo y por qué? ¿Input/Output?
+  - Carga de los datos y selección del subconjunto de análisis.
+  - Creación del objeto DESeq.
+  - Filtro básico.
+  - Normalización y estabilización de la varianza.
+  - Exploración inicial de los datos (Diagrama de cajas, clúster jerárquico y PCA).
+  - Identificación de los genes que se expresan diferencialmente:
+    + Ejecución del modelo DESeq.
+    + Contrastes entre grupos.
+    + Selección de los genes más significativos.
+    + Visualización mediante counts plots e histogramas de los p-valores.
+    
+  - Anotación de los genes diferencialmente expresados.
+  - Patrones de expresión y comparación de comparaciones (diagrama de Venn, mapas de calor, volcano plots).
+  - Análisis de significación biológica.
+
+## Descripción cualitativa del análisis
+
+### Carga de los datos y selección del subconjunto de análisis
+
+Cargamos los archivos counts.csv y targets.csv. Estos representan a un total de 292 muestras (236 del grupo NIT, 42 de SFI y 14 de ELI). A fin de reducir la carga computacional se seleccionan 10 muestras aleatorias de cada grupo, por lo que nuesto análisis se basará en el estudio sobre 30 muestras. La siguiente sentencia muestra cómo se seleccionaron:
+```{r include=T}
+my.targets <- targets %>% group_by(Group) %>% sample_n(10)
+```
+
+Una vez seleccionadas las muestras de targets se filtran las columnas de la tabla counts para tener solamente los datos de conteo de las muestras seleccionadas. Posteriormente se modifica la columna Group de targets para que sea de tipo "factor" y el grupo NIT sea el grupo de referencia (el no tratado).
+
+Finalmente podemos crear el objeto DESeqDataSet a partir de nuestra tabla targets y counts:
+```{r include=T}
+dds <- DESeqDataSetFromMatrix(countData = my.counts, colData = my.targets, design = ~ Group)
+```
+
+Este objeto será usado para los análisis posteriores.
+
+### Filtro, normalización y estabilización de la varianza
+
+Eliminamos de nuestro dataset aquellos genes que no se expresen o que apenas lo hagan por ello nos quedamos con aquellos cuya suma total de secuencias detectadas entre muestras sea mayor a 10. Pasamos de un total de 56.202 genes a 35.942.
+
+Aplicamos diferentes métodos que nos permitan estabilizar la varianza y hacer las muestras comparables entre sí. Estos son: log2 normalized counts, regularized los transformation y variance stabilizing transformation. Hemos usado las funciones del paquete DESeq2: rlog, vst y estimatedSizeFactors.
+
+### Exploración inicial de los datos 
+
+Con el diagrama de cajas podemos ver si la distribuciones de nuestros datos son similares (comparables).
+ 
+A través del gráfico de componentes principales se puede obtener una idea de cómo se agrupan las muestras en nuestro dataset así como la varianza existente.
+
+También podemos ver como se agrupan nuestras muestras a través de un clúster jerárquico. De este modo podemos detectar anomalías o si las muestras se agrupan según su grupo experimental.
+
+### Identificación de los genes que se expresan diferencialmente
+
+En este punto ejecutamos el modelo DESeq que nos permitirá obtener resultados acerca de los contrastes entre grupos, por lo que para cada contraste almacenamos su correspondiente resultado en una variable con la que vamos a poder trabajar posteriormente. 
+
+Para cada uno de los contrastes filtramos los genes tomando como referencia el p-valor ajustado obtenido. Si aceptamos un 10% de falsos positivos entonces los genes con p-val<0.1 son significativos. De este modo para el contraste de los grupos SFI vs NIT existen 1041 genes que son estadísticamente significativos, para el contraste de ELI vs NIT 5001 genes y para ELI vs SFI 897 genes. 
+La función plotCounts del paquete DESeq2 nos permite ver para un gen determinado cual ha sido el conteo por muestras de cada grupo. 
+Realizando un histograma de p-valores de los contrastes podemos tener una idea de como se distribuye el nivel de significación de los genes implicados en el contraste así como el número de genes por cada p-valor.
+
+### Anotación de los genes diferencialmente expresados
+
+Hacemos uso del paquete de anotación de datos org.Hs.eg.db de Bioconductor el cual nos permite mapear los genes a través de su identificador Ensembl para añadir su símbolo y su identificador Entrez. La siguiente función aplica ese proceso a los resultados de un contraste y los devuelve dejando solo aqullos genes para los que sí se pudo realizar la anotación:
+
+```{r include=T}
+my.annotation <- function(data){
+  claves <- substr(rownames(data), 1, 15)
+  data$symbol <- mapIds(org.Hs.eg.db, keys=claves, column="SYMBOL", keytype="ENSEMBL", multiVals="first")
+  data$entrez <- mapIds(org.Hs.eg.db, keys=claves, column="ENTREZID", keytype="ENSEMBL", multiVals="first")
+  return(data[complete.cases(data), ])
+}
+```
+
+De este modo para caa contraste pasamos a tener: 856 para SFI vs NIT, 4009 para ELI vs NIT y 745 para ELI vs SFI.
+
+### Patrones de expresión y comparación de comparaciones 
+
+A través de diagramas de Venn podemos ver el número de genes que se expresan diferencialmente por cada contraste y entre múltiples contrastes.
+
+Los Volcano plots nos permiten ver aquellos genes que son estadísticamente significativos y que tienen un alto/bajo fold change (biológicamente significativos) ya que para contruir este gráfico se toma log2FoldChange como eje X y -log10(padj) como eje Y. De ese modo los genes que están up-regulated aparecerán en el margen superior derecho (alto fold change y p-valor bajo) y los genes que están down-regulated aparecerán en el margen superior izquierdo (bajo fold change y p-valor bajo).
+
+Con el mapa de calor podemos observar que genes se muestran up/down regulados entre las muestras y grupos experimentales pudiendo identificar perfiles de expresión. Para generar el mapa de calor se usan los 20 genes que mayor conteo (normalizado) y la función pheatmap del paquete pheatmap.
+
+### Análisis de significación biológica
+
+Tras la obtención de los genes diferencialmente expresados se procede con el enriquecimiento de los datos usando la base de datos de anotaciones "Gene Ontology" de modo que se puedan identificar grupos de genes relacionados con procesos biológicos o funciones moleculares. Los resultados del análisis GO se exportan en un documento html.
+
+Por último se muestran los 10 términos más frecuentes que aparecen tras realizar el análisis GO.
 
 # Resultados
 *Gráficos obtenidos...
 
-# ¿Discusión?
-
 # Apéndice
 *Aquí va el código...
-
-
-
-
-
-
-
-
-
-
-

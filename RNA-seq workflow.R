@@ -204,7 +204,7 @@ htmlReport(hypGO, file = paste0(compare,'_GO.html'))
 # --- Términos
 library(tm)
 # Palabras que no queremos incluir
-my.stopWords <- c('of', 'the', 'to', 'in', 'and', 'terms')
+my.stopWords <- c('of', 'the', 'to', 'in', 'and')
 
 # Obtenemos los términos obtenidos en el análisis y los filtramos
 raw_terms <- removeWords(paste(tolower(summary(hypGO)$Term),collapse=""),my.stopWords) 
