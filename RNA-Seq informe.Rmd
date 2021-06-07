@@ -16,13 +16,56 @@ library(knitr)
 knitr::opts_chunk$set(echo = T, eval = FALSE)
 ```
 
-## R Markdown
+# Abstract
+Una de las tareas básicas en el análisis de datos de conteos procedentes de secuenciación de ARN (ARN-seq) es la detección de genes diferencialmente expresados. 
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Una cuestión de gran relevancia en el análisis es la cuantificación e inferencia estadística de cambios sistemáticos entre condiciones frente a la variabilidad entre las muestras dentro de una misma condición.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# Objetivos
+En este estudio se muestra una propuesta de workflow de análisis para la identificación de genes diferencialmente expresados entre tejidos del tiroides que han recibido 3 tipos de infiltración.
 
-```{r cars}
-summary(cars)
-```
+El objetivo de este estudio es doble ya que:
+
+-Primero se realiza una exploración inicial de los datos (EDA) a fin de evaluar la calidad de los mismos y explorar las relaciones entre muestras.
+
+-Posteriormente se realiza un análisis de expresión génica diferencial que nos permita explorar los resultados visualmente.
+
+# Materiales y Métodos
+*Tipo de datos, tipo de experimento, diseño experimental,...
+
+Partimos de los archivos counts.csv y targets.csv:
+
+-El archivo **counts.csv** contiene los datos de conteo, estos datos están conformados por una tabla que nos indica, para cada muestra (columna) el número de fragmentos secuenciados que han sido asignados a cada gen (fila). Inicialmente son 292 muestras y 56202 genes.
+
+-El archivo **targets.csv** contiene información sobre cada muestra del experimento en formato tabla. Cada una de las filas representa la información acerca de una muestra, es por ello que en número de filas de esta tabla coincide con el número de columnas de la tabla proveniente del archivo counts.csv. Las columnas de la tabla target representan: el identificador de cada muestra, tipo de experimento, de que parte del cuerpo proviene el tejido, el sexo del sujeto del que fue extraída la muestra así como el grupo experimental al que pertenece la misma.
+
+-Hablar de los grupos!! Cuales y cuantos
+
+
+
+*Métodos y herramientas...Pasos del pipeline (descrip general)... Software/Paquetes..¿El qué se ha hecho?
+-El paquete DESeq2 nos provee de métodos que permiten testear la expresión diferencial...
+
+-Realizaremos un análisis de expresión génica diferencial usando paquetes de Bioconductor...
+
+-Gene-level count dataset para análisis de expresión diferencial de genes...
+*Descripción cualitativa de los pasos del pipeline...¿Cómo y por qué? ¿Input/Output?
+
+# Resultados
+*Gráficos obtenidos...
+
+# ¿Discusión?
+
+# Apéndice
+*Aquí va el código...
+
+
+
+
+
+
+
+
+
+
 
