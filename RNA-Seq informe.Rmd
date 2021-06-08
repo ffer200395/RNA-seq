@@ -35,9 +35,9 @@ El objetivo de este estudio es doble ya que:
 ## Naturaleza de los datos y experimento
 Partimos de los archivos counts.csv y targets.csv:
 
-- El archivo **counts.csv** contiene los datos de conteo procedentes de secuenciación de ARN (ARN-seq) de tejidos del tiroides. Estos datos están conformados por una tabla que nos indica, para cada muestra (columna) el número de fragmentos secuenciados que han sido asignados a cada gen (fila). Inicialmente son 292 muestras y 56202 genes.
+- El archivo **counts.csv** contiene los datos de conteo procedentes de secuenciación de ARN (ARN-seq) de tejidos del tiroides. Estos datos están conformados por una tabla que nos indica, para cada muestra (columna) el número de fragmentos secuenciados que han sido asignados a cada gen (fila). Inicialmente son 292 muestras y 56.202 genes.
 
-- El archivo **targets.csv** contiene información sobre cada muestra del experimento en formato tabla. Cada una de las filas representa la información acerca de una muestra, es por ello que el número de filas de esta tabla coincide con el número de columnas de la tabla proveniente del archivo counts.csv. Las columnas de la tabla target representan: el identificador de cada muestra, tipo de experimento, de que parte del cuerpo proviene el tejido, el sexo del sujeto del que fue extraída la muestra así como el grupo experimental al que pertenece la misma.
+- El archivo **targets.csv** contiene información sobre cada muestra del experimento en formato tabla. Cada una de las filas representa la información acerca de una muestra, es por ello que el número de filas de esta tabla coincide con el número de columnas de la tabla proveniente del archivo counts.csv. Las columnas de la tabla target representan: el identificador de cada muestra, el tipo de experimento, la parte del cuerpo de la que proviene el tejido, el sexo del sujeto del que fue extraída la muestra así como el grupo experimental al que pertenece la misma.
 
 En la columna Group de la tabla targets se especifica el **grupo experimental** al que pertenece cada muestra, estos son:
 
@@ -55,7 +55,7 @@ Se realizan **3 comparaciones** de la expresión génica **entre** los **grupos*
   
 El paquete **DESeq2** de **Bioconductor** nos provee de métodos que permiten testear la expresión génica diferencial. Además el paquete **GOstats** nos permite realizar un análisis de la significación biológica de los genes que han sido identificados con diferencialmente expresados entre los grupos.
 
-Para la visualización se usan funciones del paquee **ggplot2** y funciones propias del paquete base de R.
+Para la visualización usamos funciones del paquete **ggplot2** y funciones propias del paquete base de R.
 
 Los **pasos** que se han seguido para realizar el análisis son:
 
@@ -102,7 +102,7 @@ Aplicamos diferentes métodos que nos permitan estabilizar la varianza y hacer l
 
 Con el diagrama de cajas podemos ver si la distribuciones de nuestros datos son similares (comparables).
  
-A través del gráfico de componentes principales se puede obtener una idea de cómo se agrupan las muestras en nuestro dataset así como la varianza existente.
+A través del gráfico de componentes principales podemos obtener una idea de cómo se agrupan las muestras en nuestro dataset así como la varianza existente.
 
 También podemos ver como se agrupan nuestras muestras a través de un clúster jerárquico. De este modo podemos detectar anomalías o si las muestras se agrupan según su grupo experimental.
 
@@ -110,13 +110,15 @@ También podemos ver como se agrupan nuestras muestras a través de un clúster 
 
 En este punto ejecutamos el modelo DESeq que nos permitirá obtener resultados acerca de los contrastes entre grupos, por lo que para cada contraste almacenamos su correspondiente resultado en una variable con la que vamos a poder trabajar posteriormente. 
 
-Para cada uno de los contrastes filtramos los genes tomando como referencia el p-valor ajustado obtenido. Si aceptamos un 10% de falsos positivos entonces los genes con p-val<0.1 son significativos. De este modo para el contraste de los grupos SFI vs NIT existen 1041 genes que son estadísticamente significativos, para el contraste de ELI vs NIT 5001 genes y para ELI vs SFI 897 genes. 
-La función plotCounts del paquete DESeq2 nos permite ver para un gen determinado cual ha sido el conteo por muestras de cada grupo. 
-Realizando un histograma de p-valores de los contrastes podemos tener una idea de como se distribuye el nivel de significación de los genes implicados en el contraste así como el número de genes por cada p-valor.
+Para cada uno de los contrastes filtramos los genes tomando como referencia el p-valor ajustado obtenido. Si aceptamos un 10% de falsos positivos entonces los genes con p-val ajustado <0.1 son significativos. De este modo para el contraste de los grupos **SFI-NIT** existen **1.041** genes que son estadísticamente significativos, para el contraste de **ELI-NIT** **5.001** genes y para **ELI-SFI** 897 genes. 
+
+Realizando un histograma de p-valores ajustados de los contrastes podemos tener una idea de como se distribuye el nivel de significación de los genes implicados en el contraste así como la proporción de genes para cada p-valor ajustado.
+
+Usamos la función plotCounts del paquete DESeq2 nos permite ver para un gen determinado cual ha sido el conteo por muestras de cada grupo. 
 
 ### Anotación de los genes diferencialmente expresados
 
-Hacemos uso del paquete de anotación de datos org.Hs.eg.db de Bioconductor el cual nos permite mapear los genes a través de su identificador Ensembl para añadir su símbolo y su identificador Entrez. La siguiente función aplica ese proceso a los resultados de un contraste y los devuelve dejando solo aqullos genes para los que sí se pudo realizar la anotación:
+Hacemos uso del paquete de anotación de datos org.Hs.eg.db de Bioconductor el cual nos permite mapear los genes a través de su identificador Ensembl para añadir su símbolo y su identificador Entrez. La siguiente función aplica ese proceso a los resultados de un contraste y los devuelve dejando solo aquellos genes para los que sí se pudo realizar la anotación:
 
 ```{r echo=TRUE}
 my.annotation <- function(data){
@@ -127,13 +129,13 @@ my.annotation <- function(data){
 }
 ```
 
-De este modo para caa contraste pasamos a tener: 856 para SFI vs NIT, 4009 para ELI vs NIT y 745 para ELI vs SFI.
+De este modo para cada contraste pasamos a tener: **856** para **SFI-NIT**, **4.009** para **ELI-NIT** y **745** para **ELI-SFI**.
 
 ### Patrones de expresión y comparación de comparaciones 
 
 A través de diagramas de Venn podemos ver el número de genes que se expresan diferencialmente por cada contraste y entre múltiples contrastes.
 
-Los Volcano plots nos permiten ver aquellos genes que son estadísticamente significativos y que tienen un alto/bajo fold change (biológicamente significativos) ya que para contruir este gráfico se toma log2FoldChange como eje X y -log10(padj) como eje Y. De ese modo los genes que están up-regulated aparecerán en el margen superior derecho (alto fold change y p-valor bajo) y los genes que están down-regulated aparecerán en el margen superior izquierdo (bajo fold change y p-valor bajo).
+Los Volcano plots nos permiten ver aquellos genes que son estadísticamente significativos y que tienen un alto/bajo fold change (biológicamente significativos) ya que para contruir este gráfico se toma log2FoldChange como eje X y -log10(padj) como eje Y. De este modo los genes que están up-regulated aparecerán en el margen superior derecho (alto fold change y p-valor bajo) y los genes que están down-regulated aparecerán en el margen superior izquierdo (bajo fold change y p-valor bajo).
 
 Con el mapa de calor podemos observar que genes se muestran up/down regulados entre las muestras y grupos experimentales pudiendo identificar perfiles de expresión. Para generar el mapa de calor se usan los 20 genes que mayor conteo (normalizado) y la función pheatmap del paquete pheatmap.
 
@@ -157,7 +159,7 @@ Gráfico de componentes principales:
 
 <center>![PCA](images/PCA_plot_Rlog.png)</center>
 
-Las muestras pertenecientes al grupo NIT muestran menor variabilidad entre si de los que las muestras de los grupos SFI y ELI. Parece existir una distinción entre las muestras según su grupo experimental.
+Las muestras pertenecientes al grupo NIT muestran menor variabilidad entre si que las muestras de los grupos SFI y ELI. Parece existir una distinción entre las muestras según su grupo experimental.
 
 Clúster jerárquico:
 
@@ -177,7 +179,7 @@ Mediante un histograma de p-valores ajustados podemos conocer la proporción de 
 
 <center>![p-val hist](images/hist_pvals.png)</center>
 
-Claramente se observa que para los contrastes SFI vs NIT y ELI vs NIT casi el 50% de los genes que se expresan diferencialmente tienen asociados un p-valor ajustado inferior a 0.01. En cambio esta situación no se da para el contraste ELI vs SFI lo cual sugiere que el aplicar cualquier tipo de infiltración frente el no aplicarla tiene un efecto en las muestras estadísticamente significativo.
+Claramente se observa que para los contrastes **SFI-NIT** y **ELI-NIT** casi el 50% de los genes que se expresan diferencialmente tienen asociados un p-valor ajustado inferior a 0.01. En cambio esta situación no se da para el contraste **ELI-SFI** lo cual sugiere que el aplicar cualquier tipo de infiltración frente el no aplicarla tiene un efecto en las muestras estadísticamente significativo.
 
 Diagrama de Venn:
 
@@ -197,7 +199,7 @@ Mapa de calor de los genes con mayor conteo (normalizado):
 
 <center>![heatmap](images/heatmap.png)</center>
 
-En este gráfico podemos ver que existe un conjnunto de genes que se sobreexpresan para los grupos ELI y SFI pero que están down regulados para el grupo NIT (mitad y parte inferior del heatmap). También se observa otro conjunto de genes que se muestran up/down regulados entre muestras y no enre grupos (parte superior del heatmap).
+En este gráfico podemos ver que existe un conjnunto de genes que se sobreexpresan para los grupos ELI y SFI pero que están down regulados para el grupo NIT (mitad y parte inferior del heatmap). También se observa otro conjunto de genes que se muestran up/down regulados entre muestras y no entre grupos (parte superior del heatmap).
 
 ## Significación biológica
 
@@ -206,6 +208,12 @@ El análisis de significación biológica se ha realizado para el contraste ELI-
 Además de exportar el reporte en html se muestras los 10 términos más frecuentes:
 
 <center>![terms](images/top_terms.png)</center>
+
+# Discusión
+
+Sería interesante realizar el análisis con un mayor número de muestras, de ser así se deberían de recolectar más muestras para el grupo ELI del que sólo se tienen 14 en total.
+
+Además se debería determinar si la variable "sex" está implicada en la expresión diferencial, ya que podría estar afectando al hecho de que existan genes diferencialmente expresados entre muestras de un mismo grupo experimental (tal y como se observa en el heatmap). En caso de no estar afectando se debería de tener en cuenta otras variables como la fecha de extracción.
 
 # Apéndice
 
